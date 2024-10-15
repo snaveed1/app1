@@ -48,8 +48,3 @@ jobs:
 
           # Push the Docker image
           docker push "$image"
-
-      # Step 6: Update Kubernetes deployment with the new image
-      - name: Update Kubernetes Deployment
-        run: |
-          kubectl set image deployment/app1-deployment app1=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_NPROD }}/apps-images/snaveed1/app1:${{ env.IMAGE_TAG }} -n projectcontour
