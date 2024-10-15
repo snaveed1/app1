@@ -44,7 +44,7 @@ jobs:
           image="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_NPROD }}/apps-images/snaveed1/app1:${{ env.IMAGE_TAG }}"
 
           # Build the Docker image
-          docker build -t "$image" "app1/"
+          docker build -t "$image" "."
 
           # Push the Docker image
           docker push "$image"
