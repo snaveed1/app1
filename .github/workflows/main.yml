@@ -3,7 +3,7 @@ name: CI - Build and Push to Artifact Registry
 on:
   push:
     branches:
-      - non-prod  # Trigger the CI on push to the non-prod branch
+      - main  # Trigger the CI on push to the main branch
 
 jobs:
   build-and-push:
