@@ -1,56 +1,50 @@
-name: pay-react-non-prod
+name: CI - Build and Push to Artifact Registry
 
 on:
   push:
     branches:
-      - non-prod
+      - non-prod  # Trigger the CI on push to the non-prod branch
 
 jobs:
-  pay-react-non-prod:
+  build-and-push:
     runs-on: ubuntu-latest
 
-    permissions: 
+    permissions:
       id-token: write
       contents: read
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      # Step 1: Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set environment variable
-      run: echo "GITHUB_BRANCH=$(echo $GITHUB_REF_NAME-$GITHUB_SHA)" >> $GITHUB_ENV
+      # Step 2: Set environment variable for the image tag
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-    # Authenticate to Google Cloud using Workload Identity Federation
-    - id: auth
-      name: Obtain access token using Workload Identity Federation
-      uses: google-github-actions/auth@v2
-      with:
-        create_credentials_file: true
-        token_format: access_token
-        workload_identity_provider: projects/${{ secrets.GCP_PROJECT_NUMBER_NPROD }}/locations/global/workloadIdentityPools/github-action-hg-pool/providers/github-action-hg-provider
-        service_account: github-actions-hg@${{ secrets.GCP_PROJECT_ID_NPROD }}.iam.gserviceaccount.com
+      # Step 3: Authenticate to Google Cloud using Workload Identity Federation
+      - id: 'auth'
+        name: 'Obtain access token by using Workload Identity Federation'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          create_credentials_file: true
+          token_format: access_token
+          workload_identity_provider: "projects/${{ secrets.GCP_PROJECT_NUMBER_NPROD }}/locations/global/workloadIdentityPools/github-actions-1/providers/github-actions"
+          service_account: "wif-sa@${{ secrets.GCP_PROJECT_ID_NPROD }}.iam.gserviceaccount.com"
 
-    - name: Connect to Artifact Registry
-      run: echo ${{ steps.auth.outputs.access_token }} | docker login -u oauth2accesstoken --password-stdin ${{ secrets.GCP_GAR_HOST_NPROD }}
+      # Step 4: Configure Docker to use gcloud as a credential helper for Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: |
+          echo "${{ steps.auth.outputs.access_token }}" | docker login -u oauth2accesstoken --password-stdin us-central1-docker.pkg.dev
 
-    - name: Build Docker Image
-      run: docker build -t ${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:$GITHUB_REF_NAME-$GITHUB_SHA .
+      # Step 5: Build and push Docker image for app1 to Artifact Registry
+      - name: Build and Push Docker Image
+        run: |
+          # Define the image name
+          image="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_NPROD }}/apps-images/snaveed1/app1:${{ env.IMAGE_TAG }}"
 
-    - name: Push Docker Image to Artifact Registry
-      run: docker push ${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:$GITHUB_REF_NAME-$GITHUB_SHA
+          # Build the Docker image
+          docker build -t "$image" "./app1"
 
-    - name: Update GitOps Repository
-      run: |
-        git clone https://${{ secrets.GIT_OPS_GITHUB_USER }}:${{ secrets.GIT_OPS_GITHUB_TOKEN }}@github.com/Hungama-Wohlig/gcp-payment-gitops
-        cd gcp-payment-gitops
-        git checkout non-prod
-
-        git config user.name "$GITHUB_ACTOR"
-        git config user.email "$GITHUB_ACTOR@hungama.com"
-
-        yq e '.image.name = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}"' -i pay-react/values.yaml
-        yq e '.image.tag = "${{ env.GITHUB_BRANCH }}"' -i pay-react/values.yaml
-
-        git add .
-        git commit -m "Updating newer image"
-        git push --set-upstream origin non-prod
+          # Push the Docker image
+          docker push "$image"
