@@ -48,3 +48,23 @@ jobs:
 
           # Push the Docker image
           docker push "$image"
+
+      # Step 6: Clone the GitOps repository
+      - name: Clone GitOps repository
+        run: |
+          git clone https://${{ secrets.GIT_OPS_GITHUB_USER }}:${{ secrets.GIT_OPS_GITHUB_TOKEN }}@github.com/snaveed1/gitops-apps-repo.git
+          cd gitops-apps-repo
+          git checkout non-prod
+
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@hungama.com"
+
+          # Set image name in values.yml
+          yq e '.image.name = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}"' -i app1/values.yml
+
+          # Set image tag to the commit ID in values.yml
+          yq e '.image.tag = "${{ github.sha }}"' -i app1/values.yml  # Use commit ID as tag
+
+          git add app1/values.yml
+          git commit -m "updating newer image"  
+          git push --set-upstream origin non-prod
