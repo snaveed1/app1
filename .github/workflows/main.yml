@@ -56,8 +56,8 @@ jobs:
           cd gitops-apps-repo
           git checkout non-prod
 
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@hungama.com"
+          git config user.name "snaveed1"
+          git config user.email "shaikhnaved10346@gmail.com"
 
           # Set image name in values.yml
           yq e '.image.name = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}"' -i app1/values.yml
@@ -65,6 +65,9 @@ jobs:
           # Set image tag to the commit ID in values.yml
           yq e '.image.tag = "${{ github.sha }}"' -i app1/values.yml  # Use commit ID as tag
 
-          git add app1/values.yml
-          git commit -m "updating newer image"  
+          # Step 7: Update deployment.yml with the new image tag
+          yq e '.spec.template.spec.containers[0].image = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:${{ github.sha }}"' -i app1/deployment.yml
+
+          git add app1/values.yml app1/deployment.yml
+          git commit -m "updating newer image and deployment configuration"  
           git push --set-upstream origin non-prod
