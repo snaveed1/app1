@@ -29,8 +29,8 @@ jobs:
         with:
           create_credentials_file: true
           token_format: access_token
-          workload_identity_provider: "projects/${{ secrets.GCP_PROJECT_NUMBER_NPROD }}/locations/global/workloadIdentityPools/github-actions-1/providers/github-actions"
-          service_account: "wif-sa@${{ secrets.GCP_PROJECT_ID_NPROD }}.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-1/providers/github-actions"
+          service_account: "wif-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
 
       # Step 4: Configure Docker to use gcloud as a credential helper for Artifact Registry
       - name: Configure Docker for Artifact Registry
@@ -41,7 +41,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           # Define the image name
-          image="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_NPROD }}/apps-images/snaveed1/app1:${{ env.IMAGE_TAG }}"
+          image="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/apps-images/app1:${{ env.IMAGE_TAG }}"
 
           # Build the Docker image
           docker build -t "$image" "."
@@ -59,15 +59,15 @@ jobs:
           git config user.name "snaveed1"
           git config user.email "shaikhnaved10346@gmail.com"
 
-          # Set image name in values.yml
-          yq e '.image.name = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}"' -i app1/values.yml
+          # Set image name in app1values.yml
+          yq e '.image.name = "${{ secrets.GCP_GAR_HOST }}/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO }}/${{ secrets.GCP_IMAGE_NAME }}"' -i app1/app1values.yml
 
-          # Set image tag to the commit ID in values.yml
-          yq e '.image.tag = "${{ github.sha }}"' -i app1/values.yml  # Use commit ID as tag
+          # Set image tag to the commit ID in app1values.yml
+          yq e '.image.tag = "${{ github.sha }}"' -i app1/app1values.yml  # Use commit ID as tag
 
           # Step 7: Update app1deployment.yml with the new image tag
-          yq e '.spec.template.spec.containers[0].image = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:${{ github.sha }}"' -i app1/app1deployment.yml
+          yq e '.spec.template.spec.containers[0].image = "${{ secrets.GCP_GAR_HOST }}/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_REPO }}/${{ secrets.GCP_IMAGE_NAME }}:${{ github.sha }}"' -i app1/app1deployment.yml
 
-          git add app1/values.yml app1/app1deployment.yml
+          git add app1/app1values.yml app1/app1deployment.yml
           git commit -m "updating newer image and deployment configuration"  
           git push --set-upstream origin non-prod
