@@ -65,9 +65,9 @@ jobs:
           # Set image tag to the commit ID in values.yml
           yq e '.image.tag = "${{ github.sha }}"' -i app1/values.yml  # Use commit ID as tag
 
-          # Step 7: Update deployment.yml with the new image tag
-          yq e '.spec.template.spec.containers[0].image = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:${{ github.sha }}"' -i app1/deployment.yml
+          # Step 7: Update app1deployment.yml with the new image tag
+          yq e '.spec.template.spec.containers[0].image = "${{ secrets.GCP_GAR_HOST_NPROD }}/${{ secrets.GCP_PROJECT_ID_NPROD }}/${{ secrets.GCP_REPO_NPROD }}/${{ secrets.GCP_IMAGE_NAME_NPROD }}:${{ github.sha }}"' -i app1/app1deployment.yml
 
-          git add app1/values.yml app1/deployment.yml
+          git add app1/values.yml app1/app1deployment.yml
           git commit -m "updating newer image and deployment configuration"  
           git push --set-upstream origin non-prod
