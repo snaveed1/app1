@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
             <head>
                 <style>
                     body {
-                        background-color: lightblue;
+                        background-color: pink;
                         font-size: 24px;
                         font-weight: bold;
                         display: flex;
